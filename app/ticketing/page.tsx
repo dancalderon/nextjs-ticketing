@@ -379,7 +379,7 @@ const Details = ({
 const Checkout = ({
 	selectedSeats,
 }: {
-	selectedSeats?: Seat[];
+	selectedSeats: Seat[];
 }) => {
 	return (
 		<CheckoutContainer>
@@ -414,7 +414,7 @@ const Phone = ({
 			<Legend seatCounter={seatCounter} />
 			<Theater seats={seats} handleSeatSelection={handleSeatSelection} />
 			<Details selectedSeats={selectedSeats} />
-			<Checkout />
+			<Checkout selectedSeats={selectedSeats} />
 		</Screen>
 	);
 };
