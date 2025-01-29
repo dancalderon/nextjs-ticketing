@@ -1,16 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import styled from "styled-components";
 import SVGIcons from "@/components/SVGIcons";
 import { INITIAL_SEAT_MAP } from "@/components/constants";
+import { useState } from "react";
+import styled from "styled-components";
+
+interface Seat {
+	id: number;
+	status: string;
+	setByUser: boolean;
+}
 
 // Component to inject the icon created through a symbol element
 // Render the svg icon using the href passed as props
 const Icon = ({ href, size = 100 }: { href: string; size: number }) => (
-  <svg className={href} width={size} height={size}>
-    <use href={`#${href}`} />
-  </svg>
+	<svg className={href} width={size} height={size}>
+		<use href={`#${href}`} />3
+	</svg>
 );
 
 // Header component, displaying a heading and two buttons
@@ -253,120 +259,165 @@ const Screen = styled.div`
 /******************* Logic: Start updating from here ************************/
 
 // render the two buttons making use of the Icon component
-const Header = () => {
-  const buttons = ["plus", "minus"];
-  return (
-    <HeaderContainer>
-      <HeaderTitle>Choose Seats</HeaderTitle>
-      {buttons.map((button) => (
-        <HeaderButton key={button}>
-          <Icon href={button} size="28" />
-        </HeaderButton>
-      ))}
-    </HeaderContainer>
-  );
+const Header = ({
+	buttonSeatSelection,
+}: {
+	buttonSeatSelection: (shouldAdd: boolean) => void;
+}) => {
+	const buttons = ["plus", "minus"];
+	return (
+		<HeaderContainer>
+			<HeaderTitle>Choose Seats</HeaderTitle>
+			{buttons.map((button) => (
+				<HeaderButton
+					key={button}
+					onClick={() => buttonSeatSelection(button === "plus")}
+				>
+					<Icon href={button} size="28" />
+				</HeaderButton>
+			))}
+		</HeaderContainer>
+	);
 };
 
 /**
  * Load icon files from svg. There’s no need to change this component.
  */
-const Legend = () => {
-  const items = ["available", "reserved", "selected"];
-  return (
-    <LegendContainer>
-      <div style={{ display: "none" }}>
-        <SVGIcons />
-      </div>
-      {items.map((item) => (
-        <LegendItem key={item}>
-          <Icon href={item} size="16" />
-          <LegendItemName>{item}</LegendItemName>
-        </LegendItem>
-      ))}
-    </LegendContainer>
-  );
+const Legend = ({
+	seatCounter,
+}: {
+	seatCounter: {
+		selected: number;
+		available: number;
+		reserved: number;
+	};
+}) => {
+	const items = ["available", "reserved", "selected"];
+
+	return (
+		<LegendContainer>
+			<div style={{ display: "none" }}>
+				<SVGIcons />
+			</div>
+			{items.map((item) => (
+				<LegendItem key={item}>
+					<Icon href={item} size="16" />
+					<LegendItemName>
+						{item}: {seatCounter[item as keyof typeof seatCounter]}
+					</LegendItemName>
+				</LegendItem>
+			))}
+		</LegendContainer>
+	);
 };
 
 /**
  * Render the grid of seats
  */
 const Theater = ({
-  seats = [],
-  onSeatClick,
+	seats = [],
+	handleSeatSelection,
 }: {
-  seats: string[];
-  onSeatClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+	seats: Seat[];
+	handleSeatSelection: (id: number) => void;
 }) => {
-  // four FillerSeat components, occupying the selected space in the group
-  const FillerSeats = Array(4)
-    .fill("")
-    .map((item, i) => <FillerSeat key={i} />);
+	// four FillerSeat components, occupying the selected space in the group
+	const FillerSeats = Array(4)
+		.fill("")
+		.map((item, i) => <FillerSeat key={i} />);
 
-  const Seats = seats.map((seat, i) => (
-    <Seat onClick={onSeatClick} data-index={i} data-status={seat} key={i}>
-      <Icon href={seat} size="16" />
-    </Seat>
-  ));
+	const Seats = seats.map((seat, i) => (
+		<Seat
+			onClick={() => handleSeatSelection(i)}
+			data-index={i}
+			data-status={seat.status}
+			disabled={seat.status === "reserved"}
+			key={i}
+		>
+			<Icon href={seat.status} size="16" />
+		</Seat>
+	));
 
-  return (
-    <TheaterContainer>
-      <TheaterScreen>Screen</TheaterScreen>
-      <TheaterSeats>
-        {FillerSeats}
-        {Seats}
-      </TheaterSeats>
-    </TheaterContainer>
-  );
+	return (
+		<TheaterContainer>
+			<TheaterScreen>Screen</TheaterScreen>
+			<TheaterSeats>
+				{FillerSeats}
+				{Seats}
+			</TheaterSeats>
+		</TheaterContainer>
+	);
 };
 
 // for each selected seat include a button with the close icon
 const Details = ({
-  selectedSeats = [],
+	selectedSeats = [],
 }: {
-  selectedSeats?: { seat: number; price: number }[];
+	selectedSeats?: Seat[];
 }) => {
-  // in the button include the text in the following format
-  // row: 7 seat: 4 price: $16
-  return (
-    <DetailsContainer>
-      <DetailsHeading>Details</DetailsHeading>
-      {selectedSeats.map((selectedSeat) => {
-        const entries = Object.entries(selectedSeat);
-        return (
-          <DetailsButton key={entries[0][1]} data-index={entries[0][1]}>
-            {entries
-              .map(([property, value]) => `${property}: ${value}`)
-              .join(" ")
-              .trim()}
-            <Icon href="close" size="12" />
-          </DetailsButton>
-        );
-      })}
-    </DetailsContainer>
-  );
+	// in the button include the text in the following format
+	// row: 7 seat: 4 price: $16
+	return (
+		<DetailsContainer>
+			<DetailsHeading>Details</DetailsHeading>
+			{selectedSeats.map((selectedSeat) => {
+				const entries = Object.entries(selectedSeat);
+				return (
+					<DetailsButton key={entries[0][1]} data-index={entries[0][1]}>
+						{entries
+							.map(([property, value]) => `${property}: ${value}`)
+							.join(" ")
+							.trim()}
+						<Icon href="close" size="12" />
+					</DetailsButton>
+				);
+			})}
+		</DetailsContainer>
+	);
 };
 
-const Checkout = () => {
-  return (
-    <CheckoutContainer>
-      <CheckoutTotal>${135}</CheckoutTotal>
-      <CheckoutAction>Checkout</CheckoutAction>
-    </CheckoutContainer>
-  );
+const Checkout = ({
+	selectedSeats,
+}: {
+	selectedSeats?: Seat[];
+}) => {
+	return (
+		<CheckoutContainer>
+			<CheckoutTotal>${selectedSeats?.length ?? 0 * 10}</CheckoutTotal>
+			<CheckoutAction>Checkout</CheckoutAction>
+		</CheckoutContainer>
+	);
 };
 
 // render the components making up the screen
 // use the theme in the styled component
 // pass the array of seats and the sum to the fitting components
-const Phone = ({ seats }: { seats: string[] }) => (
-  <Screen theme="dark">
-    <Header />
-    <Legend />
-    <Theater seats={seats} />
-    <Details />
-    <Checkout />
-  </Screen>
-);
+const Phone = ({
+	seats,
+	handleSeatSelection,
+	seatCounter,
+	buttonSeatSelection,
+}: {
+	seats: Seat[];
+	handleSeatSelection: (id: number) => void;
+	seatCounter: {
+		selected: number;
+		available: number;
+		reserved: number;
+	};
+	buttonSeatSelection: (shouldAdd: boolean) => void;
+}) => {
+	const selectedSeats = seats.filter((seat) => seat.status === "selected");
+	return (
+		<Screen theme="dark">
+			<Header buttonSeatSelection={buttonSeatSelection} />
+			<Legend seatCounter={seatCounter} />
+			<Theater seats={seats} handleSeatSelection={handleSeatSelection} />
+			<Details selectedSeats={selectedSeats} />
+			<Checkout />
+		</Screen>
+	);
+};
 
 /**
  * Page component to manage the state of the application and render the phone screen(s)
@@ -377,14 +428,71 @@ const Phone = ({ seats }: { seats: string[] }) => (
  *
  * Each seat has a price of 10, configured in the SEAT_PRICE constant
  */
-const TicketingPage = () => {
-  const [seats, setSeats] = useState(INITIAL_SEAT_MAP);
 
-  return (
-    <div className="app w-full flex items-center justify-center">
-      <Phone seats={seats} />
-    </div>
-  );
+const generateSeats = (initialSeats: string[]): Seat[] => {
+	return Array(initialSeats.length)
+		.fill(0)
+		.map((_, i) => ({
+			id: i,
+			status: initialSeats[i],
+			setByUser: false,
+		}));
+};
+const TicketingPage = () => {
+	const [seats, setSeats] = useState(generateSeats(INITIAL_SEAT_MAP));
+
+	const handleSeatSelection = (id: number) => {
+		const wasAvailable = seats[id].status === "available";
+
+		const updatedSeat = {
+			id,
+			status: wasAvailable ? "selected" : "available",
+			setByUser: Boolean(wasAvailable),
+		};
+		const newSeats = [...seats];
+		newSeats[id] = updatedSeat;
+		setSeats(newSeats);
+	};
+
+	const buttonSeatSelection = (shouldAdd: boolean) => {
+		if (!shouldAdd) {
+			const firstSelectedSeat = seats.findIndex(
+				(seat) => seat.status === "selected" && !seat.setByUser,
+			);
+			if (firstSelectedSeat !== -1) {
+				const newSeats = [...seats];
+				newSeats[firstSelectedSeat].status = "available";
+				setSeats(newSeats);
+			}
+		} else {
+			const newSeats = [...seats];
+			const firstAvailableSeat = newSeats.findIndex(
+				(seat) => seat.status === "available",
+			);
+			if (firstAvailableSeat !== -1) {
+				newSeats[firstAvailableSeat].status = "selected";
+				setSeats(newSeats);
+			}
+		}
+	};
+
+	//
+	const seatCounter = {
+		selected: seats.filter((seat) => seat.status === "selected").length,
+		available: seats.filter((seat) => seat.status === "available").length,
+		reserved: seats.filter((seat) => seat.status === "reserved").length,
+	};
+
+	return (
+		<div className="app w-full flex items-center justify-center">
+			<Phone
+				seats={seats}
+				handleSeatSelection={handleSeatSelection}
+				seatCounter={seatCounter}
+				buttonSeatSelection={buttonSeatSelection}
+			/>
+		</div>
+	);
 };
 
 export default TicketingPage;
